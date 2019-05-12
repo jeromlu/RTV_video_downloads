@@ -10,6 +10,7 @@ import os
 import time
 import requests
 import subprocess
+import platform
 from pytube import YouTube
 
 
@@ -90,12 +91,12 @@ class MainWindow(QMainWindow):
         self.log_frame.setMinimumHeight(200)
         
         log_label = QLabel('Log text:')
-        self.te_log_text = QTextEdit()
-        self.te_log_text.setReadOnly(True)
+        self.le_log_text = QTextEdit()
+        self.le_log_text.setReadOnly(True)
         
         log_vbox = QVBoxLayout()
         log_vbox.addWidget(log_label)
-        log_vbox.addWidget(self.te_log_text)
+        log_vbox.addWidget(self.le_log_text)
         self.log_frame.setLayout(log_vbox)
         
         
@@ -323,8 +324,13 @@ class MainWindow(QMainWindow):
     def open_CWD(self):
         '''opens CWD in windows explorer'''
         try:
-            command = 'explorer "{0}"'.format(self.yt_folder)
-            subprocess.Popen(command.replace('/', '\\'))
+            if platform.system() == 'Windows':
+                command = 'explorer "{0}"'.format(self.yt_folder)
+                subprocess.Popen(command.replace('/', '\\'))
+            else:
+                command = 'gnome-terminal -x cd {0}'.format(self.yt_folder)
+                subprocess.Popen('gnome-terminal')
+                #sos.system("gnome-terminal -e 'cd seznami'")
         except:
             self.print_err()
             
@@ -449,13 +455,16 @@ class MainWindow(QMainWindow):
     def update_progress_bar(self, msg):
         """
         Update the progress bar, when downloading rtv videos
+        First add to log text and then update the k and the progress bar
         """
+        k = self.progress_bar.value()
+        self.le_log_text.insertPlainText(time.strftime("%H:%M:%S") + ':  ' + str(k) + '  '+ msg + '\n\n')
+        self.log_texts.append(msg)
         k = self.progress_bar.value() + 1
         self.progress_bar.setValue(k)
-        self.log_texts.append(msg)
         self.down_vids_counter = self.down_vids_counter + 1
         k = self.down_vids_counter
-        self.te_log_text.insertPlainText(time.strftime("%H:%M:%S") + ':  ' + str(k) + '  '+ msg + '\n\n')
+        
         
     def add_to_log(self, msg):
         """
@@ -463,7 +472,7 @@ class MainWindow(QMainWindow):
         """
         k = self.down_vids_counter#self.progress_bar.value() + 1
         self.log_texts.append(msg)
-        self.te_log_text.insertPlainText(time.strftime("%H:%M:%S") + ':  ' + str(k) + '  ' + msg + '\n')
+        self.le_log_text.insertPlainText(time.strftime("%H:%M:%S") + ':  ' + str(k) + '  ' + msg + '\n')
         
     def start_downloading(self):
         """
