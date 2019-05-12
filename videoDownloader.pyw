@@ -541,6 +541,7 @@ class MainWindow(QMainWindow):
         for text in self.log_texts:
             f.write(text + '\n')
         f.close()
+        QApplication.quit()
                 
 #********************************************* HELPER FUNCTIONS
         
