@@ -4,6 +4,7 @@ import requests
 #import json
 import os
 import re
+import datetime
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -20,8 +21,9 @@ class DownloadVideoThread(QThread):
     
     def __init__(self, list_of_videos, parent = None):
         super(DownloadVideoThread, self).__init__(parent)
-        self.file_size_tresh = 200
-        self.home_folder = './downloads/' 
+        self.file_size_tresh = 500
+        self.by_week = True
+        self.home_folder = './downloads/RTV_downloads/' 
         self.list_of_videos = list_of_videos
         self.parent = parent
         self.save_directory = self.home_folder
@@ -45,7 +47,7 @@ class DownloadVideoThread(QThread):
             exc_type, exc_obj, exc_tb = sys.exc_info()           
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             err_msg = '{0}:\n{1}\nError occurred in file: {2}'.format(exc_type, exc_obj, fname)               
-            QMessageBox.critical(self, 'Error - see below', err_msg)
+            QMessageBox.critical(self.parent, 'Error - see below', err_msg)
 
     def download_video_from_rtv_slo(self, video_ID_number):
         get_info_api = "http://api.rtvslo.si/ava/getRecording/{0}?client_id=82013fb3a531d5414f478747c1aca622".format(video_ID_number)
@@ -74,6 +76,7 @@ class DownloadVideoThread(QThread):
         else:
             #create informative file_name and appropriate file structure
             broadcast_date = response_dict['response']['broadcastDate']
+            print(broadcast_date)
         
             stub = response_dict['response']['stub']
             video_title = response_dict['response']['title']
@@ -85,13 +88,12 @@ class DownloadVideoThread(QThread):
             base = self.slugify(broadcast_date.split(' ')[0] +' ' + video_title + ' ' + stub )
             if len(base) > 100:
                     base = base[:100]
-            new_filename =  base + '.' + ending         
-            save_directory = self.home_folder + stub + '/'
-            if not os.path.exists(save_directory):
-                self.preparation_started.emit('Had to create directory.')
-                os.makedirs(save_directory)
-            if os.path.isfile(save_directory  + new_filename):
+            new_filename =  base + '.' + ending
+
+            save_directory = self.get_save_directory(stub, broadcast_date)
+            if self.check_if_alredy_loaded(new_filename):
                 return False, 'File {0} is already on the disk'.format(save_directory  + new_filename)
+
             # get actual file
             msg = 'Started loading file {0} with size: {1:.2f} MB.....'.format(stub, file_size_MB)
             self.start_video_loading.emit(msg)
@@ -107,6 +109,31 @@ class DownloadVideoThread(QThread):
             
             msg = 'Successfully downloaded the video "{0}" which is located at "{1}"'.format(video_title, save_directory)
             return True, msg
+        
+    def get_save_directory(self, stub, date = None):
+        
+        if self.by_week:
+            date_obj = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+            year, week, _ = date_obj.isocalendar()
+            add_dir = 'by_week/{0}/{1}/'.format(year, week)
+            save_directory = self.home_folder + add_dir
+        else:
+            save_directory = self.home_folder + stub + '/'
+        
+        #if folder does not exist we create new one
+        if not os.path.exists(save_directory):
+            self.preparation_started.emit('Had to create directory.')
+            os.makedirs(save_directory)
+        return save_directory
+        
+        
+    def check_if_alredy_loaded(self, fname):
+        root = self.home_folder
+        for path, subdirs, files in os.walk(root):
+            for name in files:
+                if name == fname:
+                    return True
+        return False
 
     def check_file_size(self, response_dict):
         

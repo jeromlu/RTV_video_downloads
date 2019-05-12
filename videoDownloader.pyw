@@ -10,6 +10,7 @@ import os
 import time
 import requests
 import subprocess
+import platform
 from pytube import YouTube
 
 
@@ -323,8 +324,13 @@ class MainWindow(QMainWindow):
     def open_CWD(self):
         '''opens CWD in windows explorer'''
         try:
-            command = 'explorer "{0}"'.format(self.yt_folder)
-            subprocess.Popen(command.replace('/', '\\'))
+            if platform.system() == 'Windows':
+                command = 'explorer "{0}"'.format(self.yt_folder)
+                subprocess.Popen(command.replace('/', '\\'))
+            else:
+                command = 'gnome-terminal -x cd {0}'.format(self.yt_folder)
+                subprocess.Popen('gnome-terminal')
+                #sos.system("gnome-terminal -e 'cd seznami'")
         except:
             self.print_err()
             
