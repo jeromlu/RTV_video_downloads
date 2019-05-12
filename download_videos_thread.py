@@ -76,7 +76,6 @@ class DownloadVideoThread(QThread):
         else:
             #create informative file_name and appropriate file structure
             broadcast_date = response_dict['response']['broadcastDate']
-            print(broadcast_date)
         
             stub = response_dict['response']['stub']
             video_title = response_dict['response']['title']
@@ -90,9 +89,10 @@ class DownloadVideoThread(QThread):
                     base = base[:100]
             new_filename =  base + '.' + ending
 
-            save_directory = self.get_save_directory(stub, broadcast_date)
             if self.check_if_alredy_loaded(new_filename):
-                return False, 'File {0} is already on the disk'.format(save_directory  + new_filename)
+                return False, 'File ./{0} is already on the disk'.format(self.save_directory + '/' + new_filename)
+            self.get_save_directory(stub, broadcast_date)
+
 
             # get actual file
             msg = 'Started loading file {0} with size: {1:.2f} MB.....'.format(stub, file_size_MB)
@@ -101,13 +101,13 @@ class DownloadVideoThread(QThread):
             if r.status_code != 200:
                 return False, "Could not load the video file."
             try:
-                with open(save_directory  + new_filename, "wb") as file:
+                with open(self.save_directory  + new_filename, "wb") as file:
                     file.write(r.content)
             except Exception as e:
                 msg = 'There was something wrong with writing to the file.\nb{0}'.format(e)
                 return False, msg
             
-            msg = 'Successfully downloaded the video "{0}" which is located at "{1}"'.format(video_title, save_directory)
+            msg = 'Successfully downloaded the video "{0}" which is located at "{1}"'.format(video_title, self.save_directory)
             return True, msg
         
     def get_save_directory(self, stub, date = None):
@@ -116,15 +116,14 @@ class DownloadVideoThread(QThread):
             date_obj = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             year, week, _ = date_obj.isocalendar()
             add_dir = 'by_week/{0}/{1}/'.format(year, week)
-            save_directory = self.home_folder + add_dir
+            self.save_directory = self.home_folder + add_dir
         else:
-            save_directory = self.home_folder + stub + '/'
+            self.save_directory = self.home_folder + stub + '/'
         
         #if folder does not exist we create new one
-        if not os.path.exists(save_directory):
+        if not os.path.exists(self.save_directory):
             self.preparation_started.emit('Had to create directory.')
-            os.makedirs(save_directory)
-        return save_directory
+            os.makedirs(self.save_directory)
         
         
     def check_if_alredy_loaded(self, fname):
@@ -132,6 +131,7 @@ class DownloadVideoThread(QThread):
         for path, subdirs, files in os.walk(root):
             for name in files:
                 if name == fname:
+                    self.save_directory = os.path.relpath(path, root)
                     return True
         return False
 
