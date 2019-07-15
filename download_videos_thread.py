@@ -115,7 +115,7 @@ class DownloadVideoThread(QThread):
         if self.by_week:
             date_obj = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             year, week, _ = date_obj.isocalendar()
-            add_dir = 'by_week/{0}/{1}/'.format(year, week)
+            add_dir = 'by_week/{0}/{1:02d}/'.format(year, week)
             self.save_directory = self.home_folder + add_dir
         else:
             self.save_directory = self.home_folder + stub + '/'
