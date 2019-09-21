@@ -13,9 +13,6 @@ import subprocess
 import platform
 from pytube import YouTube
 
-
-
-
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFormLayout, QPushButton, QHBoxLayout,\
     QVBoxLayout, QTableWidget, QWidget, QDialog, QTableWidgetItem, QMessageBox,\
     QProgressBar, QAbstractScrollArea, QFrame, QTextEdit, QLabel, QFileDialog, QAction, \
@@ -26,7 +23,7 @@ from PyQt5.QtGui import QIcon
 import download_videos_thread
 import download_youtube_video_thread
 #from guiqwt.tests.qtdesigner import form
-    
+   
 TEST_TABLE = ['174277055']# ['174524156','174525617','174527091','174528549','174528545']
 TEST_YT_VIDEO = r'https://www.youtube.com/watch?v=A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173'
 __version__ = '0.1.0'
@@ -422,7 +419,7 @@ class MainWindow(QMainWindow):
             
             print( 'item: ', type(stream_itag), stream_itag)
         except Exception as e:
-            QMessageBox.critical(self, "Error: " + type(e), str(e))
+            QMessageBox.critical(self, "Error: " + str(type(e)), str(e))
             self.print_err()
     
     def download_videos_rtv(self):
