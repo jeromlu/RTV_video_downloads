@@ -19,23 +19,23 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFormLayout, QPushButton,
     QTabWidget, QLineEdit, QListWidget, QListWidgetItem, QCheckBox
 
 from PyQt5.QtGui import QIcon
-    
+
 import download_videos_thread
 import download_youtube_video_thread
 #from guiqwt.tests.qtdesigner import form
-   
+
 TEST_TABLE = ['174277055']# ['174524156','174525617','174527091','174528549','174528545']
 TEST_YT_VIDEO = r'https://www.youtube.com/watch?v=A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173'
 __version__ = '0.1.0'
 
 class MainWindow(QMainWindow):
-    
+
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
 
         #Welcom - about message
         self.show_about_message()
-        
+
         #data structures
         self.list_of_video_IDs = []
         self.log_texts = []
@@ -44,12 +44,11 @@ class MainWindow(QMainWindow):
         self.yt_history = []
         self.yt_folder = './'
         self.down_vids_counter = 0
-        
+
         #setup user interface
         self.create_main_window()
         self.create_menu_bar()
 
-        
         self.btn_check.clicked.connect(self.check)
         self.btn_download.clicked.connect(self.download)
         self.btn_add_row.clicked.connect(self.add_row)
@@ -191,34 +190,39 @@ class MainWindow(QMainWindow):
         
         #file menu
         self.file_menu = self.menuBar().addMenu("&File")
-        
+
         file_load_action = self.create_action("&Load file",
             shortcut="Ctrl+L", slot=self.import_IDs, 
             tip = "Import text file with a column of IDs",
             icon = "import-icon")
-        
-        self.add_actions(self.file_menu, [file_load_action])
-        
+        file_quit_action = self.create_action("&Quit",
+                shortcut="Ctrl+q", slot=self.close,
+                tip="Close the application"
+                )
+
+        self.add_actions(self.file_menu, [file_load_action,
+                                          file_quit_action])
+
         #Edit menu
         self.edit_menu =self.menuBar().addMenu("&Edit")
-        
+
         set_filter_action = self.create_action("Select &filter",
             shortcut = "Ctrl+F", slot = self.refine_streams,
             tip = 'Select different filter to show streams in list',
             icon = "filter-icon")
-        
+
         self.add_actions(self.edit_menu, [set_filter_action])
-        
+
         #help menu
         self.help_menu = self.menuBar().addMenu('&Help')
-        
+
         help_about_action = self.create_action("&About",
             shortcut="Ctrl+Shift+A", slot = self.show_about_message,
             tip = "Show info about the application.",
             icon = "tv-icon")
-        
+
         self.add_actions(self.help_menu, [help_about_action])
-        
+
     def show_about_message(self):
         QMessageBox.about(self, "This is the video downloader version: {0}".format(__version__),
                 "Use <b>Video downloader</b> to download videos."
@@ -229,10 +233,10 @@ class MainWindow(QMainWindow):
                 "Select one of two options and <b>click</b> one of above links to pop up "
                 "appropriate web page from which you wish to select videos.<br><br>"
                 "Have fun.")
-        
+
     def refine_streams(self):
         print('Still have to implement')
-    
+
     def populate_table(self, list):
         """
         Repopulates the table, with the items in list argument
@@ -241,7 +245,7 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(rows)
         for i in range(len(list)):
             self.table.setItem(i, 0, QTableWidgetItem(list[i]))
-                   
+
     def add_row(self):
         row_position = self.table.rowCount()
         self.table.insertRow(row_position)
