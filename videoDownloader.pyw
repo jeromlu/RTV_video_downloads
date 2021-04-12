@@ -46,9 +46,7 @@ import download_youtube_video_thread
 
 # from guiqwt.tests.qtdesigner import form
 
-TEST_TABLE = [
-    "174277055"
-]  # ['174524156','174525617','174527091','174528549','174528545']
+TEST_TABLE = ["174277055"]  # ['174524156','174525617','174527091','174528549','174528545']
 TEST_YT_VIDEO = r"https://www.youtube.com/watch?v=A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173"
 __version__ = "0.1.0"
 
@@ -318,7 +316,7 @@ class MainWindow(QMainWindow):
             self.streams = self.yt.streams.filter(progressive=True).all()
             self.populate_list_youtube()
             return True, "Youtube streams info acquired"
-        except Exception as e:
+        except Exception:
             self.print_err()
 
     def progress_check(self, stream=None, chunk=None, file_handle=None, remaining=None):
@@ -338,9 +336,7 @@ class MainWindow(QMainWindow):
         """
         select current working directory (CWD)
         """
-        fname = QFileDialog.getExistingDirectory(
-            self, "Where to save video?", self.yt_folder
-        )
+        fname = QFileDialog.getExistingDirectory(self, "Where to save video?", self.yt_folder)
 
         if fname:
             self.yt_folder = fname
@@ -383,9 +379,7 @@ class MainWindow(QMainWindow):
                     response_dict = response.json()
                     # info about the file name
                     if "response" in response_dict:
-                        file_name = response_dict["response"]["mediaFiles"][0][
-                            "filename"
-                        ]
+                        file_name = response_dict["response"]["mediaFiles"][0]["filename"]
                         self.table.setItem(i, 1, QTableWidgetItem(file_name))
                 except Exception as e:
                     self.print_err()
@@ -409,9 +403,7 @@ class MainWindow(QMainWindow):
         try:
             # get video from the user selection in the list widget
             if self.lw_streams.currentItem() is None:
-                QMessageBox.warning(
-                    self, "Warning", "Please select a stream from the list."
-                )
+                QMessageBox.warning(self, "Warning", "Please select a stream from the list.")
                 return
             stream_text = self.lw_streams.currentItem().text()
             stream_itag = stream_text.split('"')[1]
@@ -640,12 +632,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
 
-    app = QApplication.instance()
-
-    if app is None:
-        app = QApplication(sys.argv)
-    else:
-        print("QApplication instance already exists: %s" % str(app))
+    app = QApplication(sys.argv)
 
     form = MainWindow()
     form.resize(800, 700)
