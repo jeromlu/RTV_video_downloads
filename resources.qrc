@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+<file alias="main_window_icon.png">.\icons\tv-icon.png</file>
+</qresource>
+</RCC>

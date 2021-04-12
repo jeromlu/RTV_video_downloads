@@ -5,67 +5,54 @@ Created on Tue Jan  2 20:33:19 2018
 @author: Luka
 """
 
-import sys
-import os
+import io
 import time
 import requests
+import pathlib
 import subprocess
 import platform
+import traceback
+from typing import Optional
 from pytube import YouTube
 
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QFormLayout,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QTableWidget,
-    QWidget,
-    QDialog,
-    QTableWidgetItem,
-    QMessageBox,
-    QProgressBar,
-    QAbstractScrollArea,
-    QFrame,
-    QTextEdit,
-    QLabel,
-    QFileDialog,
-    QAction,
-    QTabWidget,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
-    QCheckBox,
-)
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractScrollArea
+from PyQt5.QtWidgets import QProgressBar
+from PyQt5.QtWidgets import QFrame, QTextEdit, QFileDialog, QAction
+from PyQt5.QtWidgets import QTabWidget
+from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 
 from PyQt5.QtGui import QIcon
 
-import download_videos_thread
-import download_youtube_video_thread
+from PyQt5.QtCore import QThread
 
-# from guiqwt.tests.qtdesigner import form
+from rtv_video_downloader import rtv_videos_downloader
+from rtv_video_downloader import yt_videos_downloader
+
+from rtv_video_downloader import qrc_resources  # noqa
 
 TEST_TABLE = ["174277055"]  # ['174524156','174525617','174527091','174528549','174528545']
 TEST_YT_VIDEO = r"https://www.youtube.com/watch?v=A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super(MainWindow, self).__init__(parent)
 
-        # Welcom - about message
+        # Welcome - about message.
         self.show_about_message()
 
-        # data structures
-        self.list_of_video_IDs = []
-        self.log_texts = []
-        self.streams = []
-        self.yt = None
-        self.yt_history = []
-        self.yt_folder = "./"
-        self.down_vids_counter = 0
+        # Data structures.
+        self.list_of_video_IDs: list = []
+        self.log_texts: list = []
+        self.streams: list = []
+        self.yt: Optional[YouTube] = None
+        self.yt_history: list = []
+        self.yt_folder: pathlib.Path = pathlib.Path("./")
+        self.down_vids_counter: int = 0
 
         # setup user interface
         self.create_main_window()
@@ -78,15 +65,18 @@ class MainWindow(QMainWindow):
         self.btn_show_log.toggled.connect(self.log_frame.setVisible)
         self.tabs.currentChanged.connect(self.disable_btns)
         self.btn_open_CWD.clicked.connect(self.open_CWD)
-        self.btn_cancle.clicked.connect(self.cancle)
+        self.btn_cancel.clicked.connect(self.cancel)
         self.le_video_url.editingFinished.connect(self.clear_list)
 
-    def create_main_window(self):
-        """
-        Creates main window: all buttons, layouts
+    def create_main_window(self) -> None:
+        """Creates main window: all buttons, layouts
         connections are kept outside this method.
         This method is called inside the init method
         """
+        self.setWindowTitle("RTV and YT video downloader")
+        self.setWindowIcon(QIcon(":/main_window_icon.png"))
+        self.resize(800, 700)
+
         header = ["Video ID", "Video info"]
         self.table = QTableWidget()
         self.table.setColumnCount(len(header))
@@ -115,8 +105,8 @@ class MainWindow(QMainWindow):
         self.btn_download = QPushButton("Download")
         self.btn_add_row = QPushButton("Add row")
         self.btn_remove_row = QPushButton("Remove last row")
-        self.btn_cancle = QPushButton("Cancle")
-        self.btn_cancle.setEnabled(False)
+        self.btn_cancel = QPushButton("Cancel")
+        self.btn_cancel.setEnabled(False)
         self.btn_show_log = QPushButton("Log text")
         self.btn_show_log.setCheckable(True)
         self.btn_show_log.setChecked(True)
@@ -131,7 +121,7 @@ class MainWindow(QMainWindow):
         label_WD_lyt.addWidget(label_WD)
 
         label_WD_lyt.addStretch(1)
-        self.le_CWD = QLineEdit(self.yt_folder)
+        self.le_CWD = QLineEdit(str(self.yt_folder))
         self.le_CWD.setReadOnly(True)
 
         self.progress_bar = QProgressBar(self)
@@ -147,7 +137,7 @@ class MainWindow(QMainWindow):
         vbox1.addWidget(self.btn_download)
         vbox1.addWidget(self.btn_add_row)
         vbox1.addWidget(self.btn_remove_row)
-        vbox1.addWidget(self.btn_cancle)
+        vbox1.addWidget(self.btn_cancel)
         vbox1.addSpacing(20)
         vbox1.addWidget(self.btn_show_log)
         vbox1.addStretch()
@@ -257,7 +247,7 @@ class MainWindow(QMainWindow):
         )
 
     def refine_streams(self):
-        print("Still have to implement")
+        raise NotImplementedError("Set filter action. To do.")
 
     def populate_table(self, list):
         """
@@ -285,13 +275,10 @@ class MainWindow(QMainWindow):
             self, "Import IDs from text file", path, "Text files (*.txt)"
         )
         if fname:
-            try:
-                fh = open(fname, "r")
-                raw_text = fh.read()
-                imported_IDs = raw_text.split("\n")
-                self.populate_table(imported_IDs)
-            except Exception as e:
-                self.print_err()
+            fh = open(fname, "r")
+            raw_text = fh.read()
+            imported_IDs = raw_text.split("\n")
+            self.populate_table(imported_IDs)
 
     def check(self):
         """
@@ -311,13 +298,10 @@ class MainWindow(QMainWindow):
         user has to select which format to download
         """
         yt_url = self.le_video_url.text()
-        try:
-            self.yt = YouTube(yt_url)  # , on_progress_callback = self.progress_check
-            self.streams = self.yt.streams.filter(progressive=True).all()
-            self.populate_list_youtube()
-            return True, "Youtube streams info acquired"
-        except Exception:
-            self.print_err()
+        self.yt = YouTube(yt_url)  # , on_progress_callback = self.progress_check
+        self.streams = self.yt.streams.filter(progressive=True)
+        self.populate_list_youtube()
+        return True, "Youtube streams info acquired"
 
     def progress_check(self, stream=None, chunk=None, file_handle=None, remaining=None):
 
@@ -330,16 +314,18 @@ class MainWindow(QMainWindow):
         """
         syncs the line edit and actual CWD
         """
-        self.le_CWD.setText(self.yt_folder)
+        self.le_CWD.setText(str(self.yt_folder))
 
     def browse_and_set_CWD(self):
         """
         select current working directory (CWD)
         """
-        fname = QFileDialog.getExistingDirectory(self, "Where to save video?", self.yt_folder)
+        fname = QFileDialog.getExistingDirectory(
+            self, "Where to save video?", str(self.yt_folder)
+        )
 
         if fname:
-            self.yt_folder = fname
+            self.yt_folder = pathlib.Path(fname)
             self.update_CWD()
             return True
         else:
@@ -347,16 +333,12 @@ class MainWindow(QMainWindow):
 
     def open_CWD(self):
         """opens CWD in windows explorer"""
-        try:
-            if platform.system() == "Windows":
-                command = 'explorer "{0}"'.format(self.yt_folder)
-                subprocess.Popen(command.replace("/", "\\"))
-            else:
-                command = "gnome-terminal -x cd {0}".format(self.yt_folder)
-                subprocess.Popen("gnome-terminal")
-                # sos.system("gnome-terminal -e 'cd seznami'")
-        except:
-            self.print_err()
+        if platform.system() == "Windows":
+            command = 'explorer "{0}"'.format(self.yt_folder)
+            subprocess.run(command.replace("/", "\\"))
+        else:
+            command = "gnome-terminal -x cd {0}".format(self.yt_folder.as_posix())
+            subprocess.run("gnome-terminal")
 
     def check_IDs(self):
         """
@@ -368,27 +350,23 @@ class MainWindow(QMainWindow):
         for i in range(rows):
             item = self.table.item(i, 0)
             if item:
-                try:
-                    video_ID_number = item.text()
-                    get_info_api = "http://api.rtvslo.si/ava/getRecording/{0}?client_id=82013fb3a531d5414f478747c1aca622".format(
-                        video_ID_number
-                    )
-                    response = requests.get(get_info_api)
-                    if response.status_code != 200:
-                        return False, "Error at acquiring the info about the video."
-                    response_dict = response.json()
-                    # info about the file name
-                    if "response" in response_dict:
-                        file_name = response_dict["response"]["mediaFiles"][0]["filename"]
-                        self.table.setItem(i, 1, QTableWidgetItem(file_name))
-                except Exception as e:
-                    self.print_err()
+                video_ID_number = item.text()
+                get_info_api = rtv_videos_downloader.RTV_VIDEO_DOWNLOAD_LINK.format(
+                    video_ID_number
+                )
+                response = requests.get(get_info_api)
+                if response.status_code != 200:
+                    return False, "Error at acquiring the info about the video."
+                response_dict = response.json()
+                # info about the file name
+                if "response" in response_dict:
+                    file_name = response_dict["response"]["mediaFiles"][0]["filename"]
+                    self.table.setItem(i, 1, QTableWidgetItem(file_name))
         self.table.resizeColumnsToContents()
         return True, "info added"
 
     def download(self):
-        """
-        selects appropriate function of download button according to
+        """Selects appropriate function of download button according to
         the selected tab - youtube or rtv
         """
         if self.tabs.currentIndex() == 0:
@@ -397,66 +375,68 @@ class MainWindow(QMainWindow):
             self.download_yt_video()
 
     def download_yt_video(self):
-        """
-        downloads selected youtube video
-        """
-        try:
-            # get video from the user selection in the list widget
-            if self.lw_streams.currentItem() is None:
-                QMessageBox.warning(self, "Warning", "Please select a stream from the list.")
-                return
-            stream_text = self.lw_streams.currentItem().text()
-            stream_itag = stream_text.split('"')[1]
-            i = self.lw_streams.currentRow()
-            stream = self.streams[i]
+        """Downloads selected youtube video."""
+        # get video from the user selection in the list widget
+        if self.lw_streams.currentItem() is None:
+            QMessageBox.warning(self, "Warning", "Please select a stream from the list.")
+            return
+        stream_text = self.lw_streams.currentItem().text()
+        stream_itag = stream_text.split('"')[1]
+        i = self.lw_streams.currentRow()
+        stream = self.streams[i]
+        print(f"{type(stream)=}")
 
-            # show file size and ask user if it is realy sure he wants to download
-            answer = QMessageBox.question(
-                self,
-                "File size",
-                "Are you sure you want to download video:<br><br>"
-                + "<b>"
-                + self.yt.title
-                + "</b>"
-                + "<br><br><br>With file size: <b>{0:.1f} MB</b>".format(
-                    stream.filesize / 2 ** 20
-                ),
-            )
-            if answer == QMessageBox.No:
-                return
+        # show file size and ask user if it is realy sure he wants to download
+        answer = QMessageBox.question(
+            self,
+            "File size",
+            "Are you sure you want to download video:<br><br>"
+            + "<b>"
+            + self.yt.title
+            + "</b>"
+            + "<br><br><br>With file size: <b>{0:.1f} MB</b>".format(
+                stream.filesize / 2 ** 20
+            ),
+        )
+        if answer == QMessageBox.No:
+            return
 
-            # where to save folder
-            OK = self.browse_and_set_CWD()
-            if not OK:
-                return
+        # where to save folder
+        OK = self.browse_and_set_CWD()
+        if not OK:
+            return
 
-            # set up progress bar
-            self.progress_bar.setMaximum(100)
-            self.progress_bar.setValue(0)
-            # create download thread
-            self.download_thread = download_youtube_video_thread.DownloadYoutubeThread(
-                self.yt, stream, self.yt_folder, self.cb_convert_mp3.isChecked(), self
-            )
-            self.download_thread.preparation_started.connect(self.add_to_log)
-            self.download_thread.preparation_started.connect(self.progress_check)
-            self.download_thread.start_video_loading.connect(self.add_to_log)
-            self.download_thread.video_downloaded.connect(self.add_to_log)
-            self.download_thread.stopped_downloading.connect(self.done)
-            self.download_thread.converted_to_mp3.connect(self.add_to_log)
-            self.download_thread.start()
+        # set up progress bar
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.setValue(0)
+        # Create download worker and move it to new thread.
+        self.download_thread = QThread()
+        self.download_worker = yt_videos_downloader.DownloadYoutubeWorker(
+            self.yt, stream, self.yt_folder, self.cb_convert_mp3.isChecked(), self
+        )
+        self.download_worker.moveToThread(self.download_thread)
+        self.download_thread.started.connect(self.download_worker.run)
+        self.download_worker.finished.connect(self.download_thread.quit)
+        self.download_worker.finished.connect(self.download_worker.deleteLater)
+        self.download_thread.finished.connect(self.download_thread.deleteLater)
 
-            # start download
-            self.start_downloading()
-            self.down_vids_counter = self.down_vids_counter + 1
-            # print("item: ", type(stream_itag), stream_itag)
-        except Exception as e:
-            QMessageBox.critical(self, "Error: " + str(type(e)), str(e))
-            self.print_err()
+        # Reporting progress:
+        self.download_worker.preparation_started.connect(self.add_to_log)
+        self.download_worker.preparation_started.connect(self.progress_check)
+        self.download_worker.start_video_loading.connect(self.add_to_log)
+        self.download_worker.video_downloaded.connect(self.add_to_log)
+        self.download_worker.finished.connect(self.done)
+        self.download_worker.converted_to_mp3.connect(self.add_to_log)
+        # Start the worker thread.
+        self.download_thread.start()
 
-    def download_videos_rtv(self):
-        """
-        Creates the list of all videos (lahko dodam se check video metodo)
-        Starts the download thread and connects all the methods with the signals emitted inside the download thread
+        # start download
+        self.start_downloading()
+        self.down_vids_counter = self.down_vids_counter + 1
+
+    def download_videos_rtv(self) -> None:
+        """Create list of all videos. Subsequently, start the download thread
+        and connect all the methods with the signals emitted inside the download thread.
         """
         rows = self.table.rowCount()
         number_of_rows = range(rows)
@@ -466,21 +446,27 @@ class MainWindow(QMainWindow):
             if item:
                 video_ID_number = item.text()
                 self.list_of_video_IDs.append(video_ID_number)
-        try:
-            self.download_thread = download_videos_thread.DownloadVideoThread(
-                self.list_of_video_IDs, self
-            )
-            self.progress_bar.setMaximum(len(self.list_of_video_IDs))
-            self.progress_bar.setValue(0)
-            self.download_thread.preparation_started.connect(self.add_to_log)
-            self.download_thread.start_video_loading.connect(self.add_to_log)
-            self.download_thread.video_downloaded.connect(self.update_progress_bar)
-            self.download_thread.start_downloading.connect(self.start_downloading)
-            self.download_thread.stopped_downloading.connect(self.done)
-            self.download_thread.start()
+        self.progress_bar.setMaximum(len(self.list_of_video_IDs))
+        self.progress_bar.setValue(0)
 
-        except Exception as e:
-            self.print_err()
+        self.download_thread = QThread()
+        self.download_worker = rtv_videos_downloader.DownloadVideoWorker(
+            self.list_of_video_IDs, self
+        )
+        self.download_worker.moveToThread(self.download_thread)
+        self.download_thread.started.connect(self.download_worker.run)
+        self.download_worker.finished.connect(self.download_thread.quit)
+        self.download_worker.finished.connect(self.download_worker.deleteLater)
+        self.download_thread.finished.connect(self.download_thread.deleteLater)
+
+        # Reporting progress:
+        self.download_worker.preparation_started.connect(self.add_to_log)
+        self.download_worker.start_video_loading.connect(self.add_to_log)
+        self.download_worker.video_downloaded.connect(self.update_progress_bar)
+        self.download_worker.start_downloading.connect(self.start_downloading)
+        self.download_worker.finished.connect(self.done)
+        # Start the worker thread.
+        self.download_thread.start()
 
     def update_progress_bar(self, msg):
         """
@@ -498,9 +484,7 @@ class MainWindow(QMainWindow):
         k = self.down_vids_counter
 
     def add_to_log(self, msg):
-        """
-        Adds message to the log file
-        """
+        """Adds message to the log file."""
         k = self.down_vids_counter  # self.progress_bar.value() + 1
         self.log_texts.append(msg)
         self.le_log_text.insertPlainText(
@@ -508,19 +492,15 @@ class MainWindow(QMainWindow):
         )
 
     def start_downloading(self):
+        """start downloading, disable Download, Add row buttons
+        Enable Cancel button
         """
-        start downloading, disable Download, Add row buttons
-        Enable Cancle button
-        """
-        self.btn_cancle.setEnabled(True)
+        self.btn_cancel.setEnabled(True)
         self.btn_download.setEnabled(False)
         self.btn_add_row.setEnabled(False)
 
     def disable_btns(self):
-        """
-        properly enabel, disable buttons
-        according to the selected tab
-        """
+        """Properly enable, disable buttonsaccording to the selected tab."""
         if self.tabs.currentIndex() == 1:
             self.btn_add_row.setEnabled(False)
             self.btn_remove_row.setEnabled(False)
@@ -532,9 +512,9 @@ class MainWindow(QMainWindow):
     def done(self):
         """
         Show the message that fetching videos is done.
-        Disable Cancle button, enable the Download, Add row buttons and reset progress bar to 0
+        Disable Cancel button, enable the Download, Add row buttons and reset progress bar to 0
         """
-        self.btn_cancle.setEnabled(False)
+        self.btn_cancel.setEnabled(False)
         self.btn_download.setEnabled(True)
         self.btn_add_row.setEnabled(True)
         self.progress_bar.setRange(0, 100)
@@ -543,30 +523,25 @@ class MainWindow(QMainWindow):
         self.disable_btns()
         self.download_thread = None
 
-    def cancle(self):
-        """
-        Terminate download thread
+    def cancel(self):
+        """Terminate download thread
         Enable Download button, Add row
-        Disable Cancle button
+        Disable Cancel button
         """
-        try:
-            self.download_thread.terminate()
-            self.btn_cancle.setEnabled(False)
-            self.btn_download.setEnabled(True)
-            self.btn_add_row.setEnabled(True)
-            self.progress_bar.setValue(0)
-            self.disable_btns()
-            QMessageBox.warning(
-                self,
-                "Terminated!",
-                "You have terminated the download thread\n\
-                                                        see log text to see additional info !",
-            )
-        except Exception as e:
-            self.print_err()
+        self.download_thread.terminate()
+        self.btn_cancel.setEnabled(False)
+        self.btn_download.setEnabled(True)
+        self.btn_add_row.setEnabled(True)
+        self.progress_bar.setValue(0)
+        self.disable_btns()
+        QMessageBox.warning(
+            self,
+            "Terminated!",
+            "You have terminated the download thread\n\
+                                                    see log text to see additional info !",
+        )
 
     def populate_list_youtube(self):
-
         self.lw_streams.clear()
         if len(self.streams) > 0:
             for stream in self.streams:
@@ -579,17 +554,16 @@ class MainWindow(QMainWindow):
         self.yt = None
 
     def closeEvent(self, event):
-        folder = "./history/"
+        folder = pathlib.Path("./history/")
+        folder.mkdir(parents=True, exist_ok=True)
         time_string = time.strftime("%m-%d-%Y_%H-%M-%S")
         fname = "log_text_" + time_string + ".txt"
-        f = open(folder + fname, "w")
-        for text in self.log_texts:
-            f.write(text + "\n")
-        f.close()
+        with open(folder / fname, "w") as f:
+            for text in self.log_texts:
+                f.write(text + "\n")
         QApplication.quit()
 
     # ********************************************* HELPER FUNCTIONS
-
     def add_actions(self, target, actions):
         for action in actions:
             if action is None:
@@ -621,22 +595,36 @@ class MainWindow(QMainWindow):
             action.setCheckable(True)
         return action
 
-    def print_err(self):
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        err_msg = "{0}:\n{1}\nError occurred in file: {2}\nIn line: {3}".format(
-            exc_type, exc_obj, fname, exc_tb.tb_lineno
-        )
-        QMessageBox.critical(self, "Error - see below", err_msg)
 
-
-if __name__ == "__main__":
-
-    app = QApplication(sys.argv)
-
-    form = MainWindow()
-    form.resize(800, 700)
-    app.setWindowIcon(QIcon("./icons/tv-icon.png"))
-    app.setApplicationName("RTV video downloader (samo radijske oddaje)")
-    form.show()
-    app.exec_()
+def exception_hook(excType, excValue, tracebackobj):
+    """
+    Global function to catch unhandled exceptions.
+    @param excType exception type
+    @param excValue exception value
+    @param tracebackobj traceback object
+    """
+    separator = "-" * 80
+    logFile = "last_error.log"
+    notice = (
+        """An unhandled exception occurred. Please report the problem\n"""
+        """using the error reporting dialog or via email to <%s>.\n"""
+        """A log has been written to "%s".\n\nError information:\n"""
+        % ("luka.jeromel@novartis.com", logFile)
+    )
+    versionInfo = __version__
+    timeString = time.strftime("%Y-%m-%d, %H:%M:%S")
+    tbinfofile = io.StringIO()
+    traceback.print_tb(tracebackobj, None, tbinfofile)
+    tbinfofile.seek(0)
+    tbinfo = tbinfofile.read()
+    errmsg = "%s: \n%s" % (str(excType), str(excValue))
+    sections = [separator, timeString, separator, errmsg, separator, tbinfo]
+    msg = "\n".join(sections)
+    try:
+        f = open(logFile, "w")
+        f.write(msg)
+        f.write(versionInfo)
+        f.close()
+    except IOError:
+        pass
+    QMessageBox.critical(None, "Error", str(notice) + str(msg) + str(versionInfo))

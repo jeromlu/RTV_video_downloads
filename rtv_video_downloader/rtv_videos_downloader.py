@@ -1,38 +1,37 @@
 import sys
 import requests
-
-# import json
 import os
 import re
 import datetime
+import pathlib
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
-class DownloadVideoThread(QThread):
+RTV_VIDEO_DOWNLOAD_LINK = (
+    "http://api.rtvslo.si/ava/getRecording/{0}?client_id=82013fb3a531d5414f478747c1aca622"
+)
+
+
+class DownloadVideoWorker(QObject):
 
     # signals custom
     video_downloaded = pyqtSignal(str)
     start_downloading = pyqtSignal()
-    stopped_downloading = pyqtSignal()
     start_video_loading = pyqtSignal(str)
     preparation_started = pyqtSignal(str)
+    finished = pyqtSignal()
 
     def __init__(self, list_of_videos, parent=None):
-        super(DownloadVideoThread, self).__init__(parent)
+        super(DownloadVideoWorker, self).__init__(parent)
         self.file_size_tresh = 5000
         self.by_week = True
-        self.home_folder = "./downloads/RTV_downloads/"
+        self.home_folder = pathlib.Path("./downloads/RTV_downloads/")
         self.list_of_videos = list_of_videos
         self.parent = parent
         self.save_directory = self.home_folder
-
-    def __del__(self):
-        # print('stopped')
-        # self.stopped_downloading.emit()
-        self.wait()
 
     def run(self):
         try:
@@ -43,17 +42,15 @@ class DownloadVideoThread(QThread):
                 # print(e)
                 # print(msg)
                 self.video_downloaded.emit(msg)
-            self.stopped_downloading.emit()
-        except Exception as e:
+            self.finished.emit()
+        except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(exc_type, exc_obj, fname)
             QMessageBox.critical(self.parent, "Error - see below", err_msg)
 
     def download_video_from_rtv_slo(self, video_ID_number):
-        get_info_api = "http://api.rtvslo.si/ava/getRecording/{0}?client_id=82013fb3a531d5414f478747c1aca622".format(
-            video_ID_number
-        )
+        get_info_api = RTV_VIDEO_DOWNLOAD_LINK.format(video_ID_number)
         response = requests.get(get_info_api)
         if response.status_code != 200:
             msg = "Error at acquiring the info about the video."
@@ -86,8 +83,8 @@ class DownloadVideoThread(QThread):
             video_title = response_dict["response"]["title"]
             ending = file_name.split(".")[-1]
 
-            if ending not in "mp3":
-                return False, "File ending is {0}, you should download mp3 file.".format(
+            if ending not in ["mp3", "mp4"]:
+                return False, "File ending is {0}, you should download mp3, mp4 file.".format(
                     ending
                 )
 
@@ -96,9 +93,9 @@ class DownloadVideoThread(QThread):
                 base = base[:100]
             new_filename = base + "." + ending
 
-            if self.check_if_alredy_loaded(new_filename):
+            if self.check_if_already_loaded(new_filename):
                 return False, "File ./{0} is already on the disk".format(
-                    self.save_directory + "/" + new_filename
+                    self.save_directory / new_filename
                 )
             self.get_save_directory(stub, broadcast_date)
 
@@ -111,7 +108,7 @@ class DownloadVideoThread(QThread):
             if r.status_code != 200:
                 return False, "Could not load the video file."
             try:
-                with open(self.save_directory + new_filename, "wb") as file:
+                with open(self.save_directory / new_filename, "wb") as file:
                     file.write(r.content)
             except Exception as e:
                 msg = "There was something wrong with writing to the file.\nb{0}".format(e)
@@ -128,21 +125,21 @@ class DownloadVideoThread(QThread):
             date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
             year, week, _ = date_obj.isocalendar()
             add_dir = "by_week/{0}/{1:02d}/".format(year, week)
-            self.save_directory = self.home_folder + add_dir
+            self.save_directory = self.home_folder / add_dir
         else:
-            self.save_directory = self.home_folder + stub + "/"
+            self.save_directory = self.home_folder / stub
 
         # if folder does not exist we create new one
-        if not os.path.exists(self.save_directory):
+        if not self.save_directory.exists():
             self.preparation_started.emit("Had to create directory.")
-            os.makedirs(self.save_directory)
+        self.save_directory.mkdir(parents=True, exist_ok=True)
 
-    def check_if_alredy_loaded(self, fname):
+    def check_if_already_loaded(self, fname):
         root = self.home_folder
         for path, subdirs, files in os.walk(root):
             for name in files:
                 if name == fname:
-                    self.save_directory = os.path.relpath(path, root)
+                    self.save_directory = pathlib.Path(path).relative_to(root)
                     return True
         return False
 
@@ -169,10 +166,3 @@ class DownloadVideoThread(QThread):
             return value
         except Exception as e:
             print(e)
-
-
-if __name__ == "__main__":
-
-    app = QApplication(sys.argv)
-    thread = DownloadVideoThread()
-    app.exec_()

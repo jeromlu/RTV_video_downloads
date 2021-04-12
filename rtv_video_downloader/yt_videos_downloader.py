@@ -7,28 +7,38 @@ Created on Mon Jun 25 10:07:35 2018
 
 import sys
 import os
+import pathlib
 import subprocess
 
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QWidget
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QObject
+
+from pytube import YouTube, Stream
 
 
-class DownloadYoutubeThread(QThread):
+# class DownloadYoutubeThread(QThread):
+class DownloadYoutubeWorker(QObject):
 
     yt_progress = pyqtSignal(int)  # Here int to represent percentage of video
     preparation_started = pyqtSignal(str)
     start_video_loading = pyqtSignal(str)
     video_downloaded = pyqtSignal(str)
-    stopped_downloading = pyqtSignal()
     converted_to_mp3 = pyqtSignal(str)
+    finished = pyqtSignal()
 
-    def __init__(self, yt, stream, save_dir, to_mp3=False, parent=None):
-        super(DownloadYoutubeThread, self).__init__(parent)
+    def __init__(
+        self,
+        yt: YouTube,
+        stream: Stream,
+        save_dir: pathlib.Path,
+        to_mp3: bool = False,
+        parent: QWidget = None,
+    ) -> None:
+        super(DownloadYoutubeWorker, self).__init__(parent)
         self.stream = stream
         self.yt = yt
         self.file_size = stream.filesize
-        # print(save_dir)
         self.save_directory = save_dir
         self.convert_mp3 = to_mp3
 
@@ -37,20 +47,13 @@ class DownloadYoutubeThread(QThread):
             self.preparation_started.emit("Download started....")
             e, msg = self.download_yt_video(self.stream)
             self.video_downloaded.emit(msg)
-            self.stopped_downloading.emit()
-        except:
+            self.finished.emit()
+        except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(
-                exc_type, exc_obj, fname
-            )
+            err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(exc_type, exc_obj, fname)
             print(err_msg)
             QMessageBox.critical(self, "Error - see below", err_msg)
-
-    def __del__(self):
-        # print('stopped')
-        # self.stopped_downloading.emit()
-        self.wait()
 
     def download_yt_video(self, stream):
 
@@ -72,48 +75,20 @@ class DownloadYoutubeThread(QThread):
                 self.converted_to_mp3.emit(
                     "Video additionally converted to mp3: " + video_title + ".mp3"
                 )
-            msg = 'Successfully downloaded the video "{0}" which is located at "{1}"\n\n'.format(
-                video_title, self.save_directory
+            msg = (
+                'Successfully downloaded the video "{0}" which is located at "{1}"\n\n'.format(
+                    video_title, self.save_directory
+                )
             )
             return True, msg
-        except:
+        except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(
-                exc_type, exc_obj, fname
-            )
+            err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(exc_type, exc_obj, fname)
 
             print(err_msg)
             QMessageBox.critical(self, "Error - see below", err_msg)
 
     def convert_to_mp3(self):
+        # TODO currenlty I am using ffmpeg.
         pass
-
-
-"""
-import os
-import subprocess
-
-import pytube
-
-yt = pytube.YouTube("https://www.youtube.com/watch?v=WH7xsW5Os10")
-
-vids= yt.streams.all()
-for i in range(len(vids)):
-    print(i,'. ',vids[i])
-
-vnum = int(input("Enter vid num: "))
-
-parent_dir = r"C:\YTDownloads"
-vids[vnum].download(parent_dir)
-
-new_filename = input("Enter filename (including extension): "))  # e.g. new_filename.mp3
-
-default_filename = vids[vnum].default_filename  # get default name using pytube API
-subprocess.call(['ffmpeg', '-i',                # or subprocess.run (Python 3.5+)
-    os.path.join(parent_dir, default_filename),
-    os.path.join(parent_dir, new_filename)
-])
-
-print('done')
-"""
