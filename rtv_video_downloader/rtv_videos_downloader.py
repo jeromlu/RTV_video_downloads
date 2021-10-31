@@ -5,7 +5,7 @@ import re
 import datetime
 import pathlib
 
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QMessageBox
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -142,6 +142,9 @@ class DownloadVideoWorker(QObject):
                     self.save_directory = pathlib.Path(path).relative_to(root)
                     return True
         return False
+
+    def rearrange_rtv_files(self, folde: pathlib.Path, by_week: bool = True):
+        pass
 
     def check_file_size(self, response_dict):
 

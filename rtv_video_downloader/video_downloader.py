@@ -13,7 +13,7 @@ import subprocess
 import platform
 import traceback
 from typing import Optional
-from pytube import YouTube
+from pytube import YouTube, Playlist
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.log_texts: list = []
         self.streams: list = []
         self.yt: Optional[YouTube] = None
+        self.yt_playlist: Optional[Playlist] = None
         self.yt_history: list = []
         self.yt_folder: pathlib.Path = pathlib.Path("./")
         self.down_vids_counter: int = 0
@@ -281,21 +282,30 @@ class MainWindow(QMainWindow):
             self.populate_table(imported_IDs)
 
     def check(self):
-        """
-        selects appropriate function of check button, according to
-        the selected tab
+        """Selects appropriate function of check button, according to
+        the selected tab.
         """
         if self.tabs.currentIndex() == 0:
             self.check_IDs()
         elif self.tabs.currentIndex() == 1:
             self.get_formats()
 
+    def download_playlist(self):
+        if self.yt_playlist is None:
+            QMessageBox.warning(self, "Download error", "Link is not a playlist.")
+            return
+        for yt in self.yt_playlist:
+            print(f"{yt=}")
+            print(f"{yt.title()=}")
+            print(f"{yt.streams=}")
+            stream = yt.streams.first()
+            print(f"{stream=}")
+
     def get_formats(self):
-        """
-        creates youtube video object
-        acquires all possible selected formatsa and
+        """Creates youtube video object
+        acquires all possible selected formats and
         populates the QListWidget (formats_list)
-        user has to select which format to download
+        user has to select which format to download.
         """
         yt_url = self.le_video_url.text()
         self.yt = YouTube(yt_url)  # , on_progress_callback = self.progress_check
@@ -380,11 +390,8 @@ class MainWindow(QMainWindow):
         if self.lw_streams.currentItem() is None:
             QMessageBox.warning(self, "Warning", "Please select a stream from the list.")
             return
-        stream_text = self.lw_streams.currentItem().text()
-        stream_itag = stream_text.split('"')[1]
-        i = self.lw_streams.currentRow()
-        stream = self.streams[i]
-        print(f"{type(stream)=}")
+        idx = self.lw_streams.currentRow()
+        stream = self.streams[idx]
 
         # show file size and ask user if it is realy sure he wants to download
         answer = QMessageBox.question(
