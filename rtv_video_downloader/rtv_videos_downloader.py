@@ -4,10 +4,11 @@ import os
 import re
 import datetime
 import pathlib
+from typing import Optional
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QWidget
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 
 
 RTV_VIDEO_DOWNLOAD_LINK = (
@@ -24,7 +25,7 @@ class DownloadVideoWorker(QObject):
     preparation_started = pyqtSignal(str)
     finished = pyqtSignal()
 
-    def __init__(self, list_of_videos, parent=None):
+    def __init__(self, list_of_videos, parent: Optional[QWidget] = None):
         super(DownloadVideoWorker, self).__init__(parent)
         self.file_size_tresh = 5000
         self.by_week = True
@@ -39,8 +40,6 @@ class DownloadVideoWorker(QObject):
             for video_ID_number in self.list_of_videos:
                 self.preparation_started.emit(video_ID_number + ".....")
                 e, msg = self.download_video_from_rtv_slo(video_ID_number)
-                # print(e)
-                # print(msg)
                 self.video_downloaded.emit(msg)
             self.finished.emit()
         except Exception:
@@ -68,7 +67,7 @@ class DownloadVideoWorker(QObject):
 
         # check the file size, if it is too big will not be downloaded
         file_size = response_dict["response"]["mediaFiles"][0]["filesize"]
-        file_size_MB = float(file_size) / 2 ** 20
+        file_size_MB = float(file_size) / 2**20
 
         if self.check_file_size(response_dict):
             msg = "File is larger than {0} MB.\nIt will not be downloaded".format(
@@ -119,7 +118,7 @@ class DownloadVideoWorker(QObject):
             )
             return True, msg
 
-    def get_save_directory(self, stub, date=None):
+    def get_save_directory(self, stub, date: Optional[str] = None) -> None:
 
         if self.by_week:
             date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
@@ -149,7 +148,7 @@ class DownloadVideoWorker(QObject):
     def check_file_size(self, response_dict):
 
         file_size = response_dict["response"]["mediaFiles"][0]["filesize"]
-        file_size_MB = float(file_size) / 2 ** 20
+        file_size_MB = float(file_size) / 2**20
         return file_size_MB > self.file_size_tresh
 
     def slugify(self, value):

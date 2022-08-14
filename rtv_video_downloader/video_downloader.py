@@ -15,18 +15,18 @@ import traceback
 from typing import Optional
 from pytube import YouTube, Playlist
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
-from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QCheckBox
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractScrollArea
-from PyQt5.QtWidgets import QProgressBar
-from PyQt5.QtWidgets import QFrame, QTextEdit, QFileDialog, QAction
-from PyQt5.QtWidgets import QTabWidget
-from PyQt5.QtWidgets import QListWidget, QListWidgetItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
+from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout
+from PyQt6.QtWidgets import QPushButton, QLabel, QLineEdit, QCheckBox
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractScrollArea
+from PyQt6.QtWidgets import QProgressBar
+from PyQt6.QtWidgets import QFrame, QTextEdit, QFileDialog
+from PyQt6.QtWidgets import QTabWidget
+from PyQt6.QtWidgets import QListWidget, QListWidgetItem
 
-from PyQt5.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QAction
 
-from PyQt5.QtCore import QThread
+from PyQt6.QtCore import QThread
 
 from rtv_video_downloader import rtv_videos_downloader
 from rtv_video_downloader import yt_videos_downloader
@@ -39,7 +39,7 @@ __version__ = "0.2.0"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent: QWidget = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super(MainWindow, self).__init__(parent)
 
         # Welcome - about message.
@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(len(TEST_TABLE) + 3)
         self.table.setHorizontalHeaderLabels(header)
         self.populate_table(TEST_TABLE)
-        self.table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.table.resizeColumnsToContents()
 
         vbox_table = QVBoxLayout()
@@ -402,10 +402,10 @@ class MainWindow(QMainWindow):
             + self.yt.title
             + "</b>"
             + "<br><br><br>With file size: <b>{0:.1f} MB</b>".format(
-                stream.filesize / 2 ** 20
+                stream.filesize / 2**20
             ),
         )
-        if answer == QMessageBox.No:
+        if answer == QMessageBox.StandardButton.No:
             return
 
         # where to save folder
@@ -544,8 +544,8 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(
             self,
             "Terminated!",
-            "You have terminated the download thread\n\
-                                                    see log text to see additional info !",
+            "You have terminated the download thread\n"
+            "see log text to see additional info !",
         )
 
     def populate_list_youtube(self):

@@ -9,15 +9,15 @@ import sys
 import os
 import pathlib
 import subprocess
+from typing import Optional
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from PyQt6.QtWidgets import QMessageBox, QWidget
 
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt6.QtCore import pyqtSignal, QObject
 
 from pytube import YouTube, Stream
 
 
-# class DownloadYoutubeThread(QThread):
 class DownloadYoutubeWorker(QObject):
 
     yt_progress = pyqtSignal(int)  # Here int to represent percentage of video
@@ -33,7 +33,7 @@ class DownloadYoutubeWorker(QObject):
         stream: Stream,
         save_dir: pathlib.Path,
         to_mp3: bool = False,
-        parent: QWidget = None,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super(DownloadYoutubeWorker, self).__init__(parent)
         self.stream = stream
@@ -53,13 +53,13 @@ class DownloadYoutubeWorker(QObject):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(exc_type, exc_obj, fname)
             print(err_msg)
-            QMessageBox.critical(self, "Error - see below", err_msg)
+            QMessageBox.critical(self.parent, "Error - see below", err_msg)
 
     def download_yt_video(self, stream):
 
         try:
             video_title = self.yt.title
-            file_size_MB = self.file_size / (2 ** 20)
+            file_size_MB = self.file_size / (2**20)
             msg = "Started loading file {0} with size: {1:.2f} MB.....".format(
                 video_title, file_size_MB
             )
