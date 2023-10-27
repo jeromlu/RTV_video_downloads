@@ -14,3 +14,4 @@ __pycache__/
 .settings
 .vscode
 .ipynb_checkpoints
+.mypy_cache

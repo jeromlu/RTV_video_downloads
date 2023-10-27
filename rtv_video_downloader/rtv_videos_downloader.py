@@ -18,7 +18,7 @@ RTV_VIDEO_DOWNLOAD_LINK = (
 
 class DownloadVideoWorker(QObject):
 
-    # signals custom
+    # Custom signals.
     video_downloaded = pyqtSignal(str)
     start_downloading = pyqtSignal()
     start_video_loading = pyqtSignal(str)

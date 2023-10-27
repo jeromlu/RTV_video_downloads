@@ -90,5 +90,5 @@ class DownloadYoutubeWorker(QObject):
             QMessageBox.critical(self, "Error - see below", err_msg)
 
     def convert_to_mp3(self):
-        # TODO currenlty I am using ffmpeg.
+        # TODO currently I am using ffmpeg.
         pass
