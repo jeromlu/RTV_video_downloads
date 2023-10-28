@@ -17,7 +17,6 @@ RTV_VIDEO_DOWNLOAD_LINK = (
 
 
 class DownloadVideoWorker(QObject):
-
     # Custom signals.
     video_downloaded = pyqtSignal(str)
     start_downloading = pyqtSignal()
@@ -25,13 +24,12 @@ class DownloadVideoWorker(QObject):
     preparation_started = pyqtSignal(str)
     finished = pyqtSignal()
 
-    def __init__(self, list_of_videos, parent: Optional[QWidget] = None):
+    def __init__(self, list_of_videos, parent: Optional[QObject] = None):
         super(DownloadVideoWorker, self).__init__(parent)
         self.file_size_tresh = 5000
         self.by_week = True
         self.home_folder = pathlib.Path("./downloads/RTV_downloads/")
         self.list_of_videos = list_of_videos
-        self.parent = parent
         self.save_directory = self.home_folder
 
     def run(self):
@@ -46,7 +44,7 @@ class DownloadVideoWorker(QObject):
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             err_msg = "{0}:\n{1}\nError occurred in file: {2}".format(exc_type, exc_obj, fname)
-            QMessageBox.critical(self.parent, "Error - see below", err_msg)
+            QMessageBox.critical(self.parent(), "Error - see below", err_msg)
 
     def download_video_from_rtv_slo(self, video_ID_number):
         get_info_api = RTV_VIDEO_DOWNLOAD_LINK.format(video_ID_number)
@@ -119,7 +117,6 @@ class DownloadVideoWorker(QObject):
             return True, msg
 
     def get_save_directory(self, stub, date: Optional[str] = None) -> None:
-
         if self.by_week:
             date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
             year, week, _ = date_obj.isocalendar()
@@ -146,7 +143,6 @@ class DownloadVideoWorker(QObject):
         pass
 
     def check_file_size(self, response_dict):
-
         file_size = response_dict["response"]["mediaFiles"][0]["filesize"]
         file_size_MB = float(file_size) / 2**20
         return file_size_MB > self.file_size_tresh

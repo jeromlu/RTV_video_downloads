@@ -1,9 +1,60 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel"
+    "setuptools>=61.0.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "rtv_video_downloader"
+version = "0.3.0"
+dependencies = [
+    "pyqt6 >=6.5.3",
+    "pytube >=15.0.0",
+    "requests >=2.31.0"
+]
+requires-python = ">=3.10"
+authors = [
+    {name = "Luka Jeromel", email = "luka.jeromel1@gmail.com"}
+]
+description = "Simple application to download videos from youtube or RTV SLO."
+readme= "README.md"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    # "Operating System :: OS Independent",
+    "License :: GNU",
+]
+
+[project.urls]
+homepage = "https://github.com/jeromlu/RTV_video_downloads"
+source = "https://github.com/jeromlu/RTV_video_downloads"
+documentation = "https://github.com/jeromlu/RTV_video_downloads"
+issues = "https://github.com/jeromlu/RTV_video_downloads/issues"
+changelog = "https://github.com/jeromlu/RTV_video_downloads"
+
+[project.scripts]
+rtv-video-downloader="rtv_video_downloader.__main__:main"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.flake8]
+max-line-length=95
+extend-ignore = "E203"
+statistics=true
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pylint]
+disable = "C0330, C0326"
+max-line-length = 95
 
 [tool.black]
 line-length = 95

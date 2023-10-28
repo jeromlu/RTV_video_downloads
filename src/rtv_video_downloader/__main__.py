@@ -1,11 +1,12 @@
+import sys
+
 from PyQt6.QtWidgets import QApplication
 
 from rtv_video_downloader.video_downloader import MainWindow
+from rtv_video_downloader.video_downloader import exception_hook
 
 
 def launch_app():
-    import sys
-
     app = QApplication(sys.argv)
 
     form = MainWindow()
@@ -13,5 +14,10 @@ def launch_app():
     sys.exit(app.exec())
 
 
-if __name__ == "__main__":
+def main():
+    sys.excepthook = exception_hook
     launch_app()
+
+
+if __name__ == "__main__":
+    main()

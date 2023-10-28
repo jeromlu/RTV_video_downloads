@@ -34,7 +34,10 @@ from rtv_video_downloader import yt_videos_downloader
 from rtv_video_downloader import qrc_resources  # noqa
 
 TEST_TABLE = ["174277055"]  # ['174524156','174525617','174527091','174528549','174528545']
-TEST_YT_VIDEO = r"https://www.youtube.com/watch?v=A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173"
+TEST_YT_VIDEO = (
+    r"https://www.youtube.com/watch?v="
+    r"A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173"
+)
 __version__ = "0.2.0"
 
 
@@ -74,6 +77,7 @@ class MainWindow(QMainWindow):
         connections are kept outside this method.
         This method is called inside the init method
         """
+        # TODO(lj): Move UI creation into separate class and python file.
         self.setWindowTitle("RTV and YT video downloader")
         self.setWindowIcon(QIcon(":/main_window_icon.png"))
         self.resize(800, 700)
@@ -270,7 +274,6 @@ class MainWindow(QMainWindow):
         self.table.removeRow(row_position)
 
     def import_IDs(self):
-
         path = "."
         fname, f_type = QFileDialog.getOpenFileName(
             self, "Import IDs from text file", path, "Text files (*.txt)"
@@ -314,7 +317,6 @@ class MainWindow(QMainWindow):
         return True, "Youtube streams info acquired"
 
     def progress_check(self, stream=None, chunk=None, file_handle=None, remaining=None):
-
         # Gets the percentage of the file that has been downloaded.
         # percent = (100*(stream.filesize-remaining))/stream.filesize
         # self.progress_bar.setValue(percent)
