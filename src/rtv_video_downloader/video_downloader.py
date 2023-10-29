@@ -563,7 +563,7 @@ class MainWindow(QMainWindow):
         self.yt = None
 
     def closeEvent(self, event):
-        folder = pathlib.Path("./history/")
+        folder = pathlib.Path("./data/history/")
         folder.mkdir(parents=True, exist_ok=True)
         time_string = time.strftime("%m-%d-%Y_%H-%M-%S")
         fname = "log_text_" + time_string + ".txt"
