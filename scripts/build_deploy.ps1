@@ -1,10 +1,8 @@
 $ProjectRootDir = (Get-Item $PSScriptRoot).parent.FullName
-pwd
 $AppDirPath = "$ProjectRootDir/dist/rtv-video-downloader"
-$RelVersionFilePath = "$ProjectRootDir/src/rtv_video_downloader/__version__.py" 
-Write-Output $RelVersionFilePath
+$RelVersionFilePath = "$ProjectRootDir/pyproject.toml"
 $AppPyinstallerSpecFname =  "rtv_video_downloader.spec"
-$FixedVerStrPart  = "__version__: str = "
+$FixedVerStrPart  = "version = "
 
 function Get-LjAppVersionString{
     param (
@@ -13,15 +11,20 @@ function Get-LjAppVersionString{
     $searchStringPattern = "$fixedVerStrPart`"(.*)`"$"
     $selectedString = Select-String -Path $relVersionFilePath -Pattern $searchStringPattern
     if (-not $selectedString) {
-        Write-Output "Something wrong with the version.`n"
-        return ""
+        $msg =  "Something wrong with the version.`n"
+        Write-Host $msg
+        throw $msg
     }
     if ($selectedString.Matches.Groups[1].Value) {
-        return $selectedString.Matches.Groups[1].Value.Replace(".", "-")
+        $versionGroupString = $selectedString.Matches.Groups[1].Value
+        Write-Host "Found version string=`'$versionGroupString`'"
+        #return $selectedString.Matches.Groups[1].Value.Replace(".", "-")
+        return $selectedString
     }
     else {
-        Write-Output "Something wrong with version string in python file.`n"
-        return ""
+        $msg = "Something wrong with version string in python file.`n"
+        Write-Host $msg
+        throw $msg
     }
 }
 
@@ -32,7 +35,8 @@ function New-VersionString {
     $splitted = $oldVersionString.Split("-")
     #([regex]::Matches($oldVersionString, "<= goes here /" )).count
     if ($splitted.Count -ne 3) {
-        "Old version of string is in wrong format."
+        $msg = "Old version of string is in wrong format."
+        throw $msg
     }
     $newNumber = [int]$splitted[2] + 1
     $first = $splitted[0]
@@ -40,10 +44,10 @@ function New-VersionString {
     return "$first-$second-$newNumber"
 }
 
-$versionString = Get-LjAppVersionString($fixedVerStrPart)
+$version = Get-LjAppVersionString($FixedVerStrPart)
+$versionString = $version.Matches.Groups[1].Value.Replace(".", "-")
 $newVersionString = New-VersionString($versionString)
-$outFile = "$appDirPath`_v$newVersionString.zip" 
-Write-Output $outFile
+$outFile = "$appDirPath`_v$newVersionString.zip"
 
 if (Test-Path -Path $outFile) {
     # PromptForChoice Args
@@ -58,7 +62,7 @@ if (Test-Path -Path $outFile) {
 
     switch($choice)
     {
-        $default { 
+        $default {
             Write-Output "Deployment stopped."
             return
         }
@@ -67,12 +71,13 @@ if (Test-Path -Path $outFile) {
 
 $filecontent = Get-Content -Path $relVersionFilePath -Raw
 $newPythonVersionString = $newVersionString.replace("-", ".")
-$newFileContent = "$fixedVerStrPart`"$newPythonVersionString`""
+$newFileContent = $filecontent.Replace(
+    $version.Matches.Groups[0].Value,
+    "$FixedVerStrPart`"$newPythonVersionString`""
+    )
 Set-Content -Path $relVersionFilePath -Value $newFileContent
 
 pyinstaller -y $AppPyinstallerSpecFname
 
 $filesToCompress = (Get-ChildItem -Path $appDirPath).FullName
 Compress-Archive -Path $filesToCompress -DestinationPath $outFile -Confirm
-
-

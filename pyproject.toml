@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = [
     "setuptools>=61.0.0",
 ]
@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rtv_video_downloader"
-version = "0.3.0"
+version = "0.1.2"
 dependencies = [
     "pyqt6 >=6.5.3",
     "pytube >=15.0.0",
@@ -59,3 +59,4 @@ max-line-length = 95
 [tool.black]
 line-length = 95
 target-version = ['py310']
+

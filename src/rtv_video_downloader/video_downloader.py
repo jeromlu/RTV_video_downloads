@@ -32,14 +32,13 @@ from rtv_video_downloader import rtv_videos_downloader
 from rtv_video_downloader import yt_videos_downloader
 
 from rtv_video_downloader import qrc_resources  # noqa
+from rtv_video_downloader import __version__
 
 TEST_TABLE = ["174277055"]  # ['174524156','174525617','174527091','174528549','174528545']
 TEST_YT_VIDEO = (
     r"https://www.youtube.com/watch?v="
     r"A12Vtv-pCIU&list=PLB0622Ce188vTD3ANxoQbtJzqHp75owak&index=173"
 )
-__version__ = "0.2.0"
-
 
 class MainWindow(QMainWindow):
     def __init__(self, parent: Optional[QWidget] = None) -> None:

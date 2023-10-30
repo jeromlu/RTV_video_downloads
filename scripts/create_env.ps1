@@ -2,15 +2,9 @@ Param(
     [Bool] $EditableInstall = $true
 )
 
-# It is assumed that project root is parent folder of this script. 
-pwd
-Write-Output  $PSScriptRoot
-Write-Output  "$PSScriptRoot/.."
-#Set-Location $PSScriptRoot
+# It is assumed that project root is parent folder of this script.
 Push-Location $PSScriptRoot
-pwd
 cd ..
-pwd
 
 function CheckExitCode($errormsg) {
     if ($LastExitCode -ne 0) {
